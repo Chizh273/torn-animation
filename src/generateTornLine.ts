@@ -1,7 +1,8 @@
 import random from 'lodash.random';
+import { Point } from './types';
 
 // https://stackoverflow.com/a/34372870
-const getPointOnLine = (lineStart, lineEnd, lineDistance, distanceToPoint) => {
+const getPointOnLine = (lineStart: Point, lineEnd: Point, lineDistance: number, distanceToPoint: number) => {
   const fractionOfTotal = distanceToPoint / lineDistance;
 
   return {
@@ -10,7 +11,7 @@ const getPointOnLine = (lineStart, lineEnd, lineDistance, distanceToPoint) => {
   };
 };
 
-const applyOffset = (point, offset) => {
+const applyOffset = (point: Point, offset: number) => {
   const offsetAbs = Math.abs(offset);
 
   return {
@@ -19,10 +20,10 @@ const applyOffset = (point, offset) => {
   };
 };
 
-const generateTornLine = (start, end, lineLength, countOfPoints, offset) => {
+const generateTornLine = (start: Point, end: Point, lineLength: number, countOfPoints: number, offset: number) => {
   const onePartSize = lineLength / countOfPoints;
 
-  const { points } = Array.from({ length: countOfPoints - 1 }).reduce(
+  const { points } = Array.from({ length: countOfPoints - 1 }).reduce<{ points: Point[]; prevPoint: Point }>(
     (acc, _, i) => {
       const randDistance = random(onePartSize * i, onePartSize * (i + 1), true);
 

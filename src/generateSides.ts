@@ -1,4 +1,6 @@
-const generateSides = (width, height) => ({
+import { Sides } from './types';
+
+const generateSides = (width: number, height: number): Sides => ({
   TOP: {
     start: { x: 0, y: 0 },
     end: { x: width, y: 0 }

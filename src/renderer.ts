@@ -4,9 +4,14 @@ import generateTornLine from './generateTornLine';
 import createCanvas from './createCanvas';
 import generateSides from './generateSides';
 
-export default function renderer(canvas, ctx, width, height) {
+export default function renderer(
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+) {
   const mat = new DOMMatrix().translate(0, 0).scale(1, 1);
-  const { ctx: fakeCtx, canvas: fakeCanvas } = createCanvas({ width, height });
+  const { ctx: fakeCtx, canvas: fakeCanvas } = createCanvas(width, height);
 
   const sides = generateSides(width, height);
 
@@ -15,18 +20,18 @@ export default function renderer(canvas, ctx, width, height) {
   ctx.strokeStyle = 'gray';
   fakeCtx.strokeStyle = 'gray';
 
-  const getImageFromFakeCanvas = (originalCanvasImg, points) => {
-    fakeCtx.clearRect(0, 0, width, height);
-
-    fakeCtx.drawImage(originalCanvasImg, 0, 0, width, height);
-
-    fakeCtx.beginPath();
-    points.map(({ x, y }) => fakeCtx.lineTo(x, y));
-    fakeCtx.stroke();
-    fakeCtx.closePath();
-
-    return fakeCtx.toDataURL('image/png');
-  };
+  // const getImageFromFakeCanvas = (originalCanvasImg, points) => {
+  //   fakeCtx.clearRect(0, 0, width, height);
+  //
+  //   fakeCtx.drawImage(originalCanvasImg, 0, 0, width, height);
+  //
+  //   fakeCtx.beginPath();
+  //   points.map(({ x, y }) => fakeCtx.lineTo(x, y));
+  //   fakeCtx.stroke();
+  //   fakeCtx.closePath();
+  //
+  //   // return fakeCtx.toDataURL('image/png');
+  // };
 
   let timer = 0;
 
