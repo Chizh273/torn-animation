@@ -1,28 +1,14 @@
 import createCanvas from './createCanvas';
-import generateTornLine from './generateTornLine';
-import createLine from './createLine';
-import calcLineLength from './calcLineLength';
+import renderer from './renderer';
 
 const WIDTH = window.innerWidth;
 const HEIGHT = window.innerHeight;
 
-const { ctx } = createCanvas({
+const { ctx, canvas } = createCanvas({
   width: WIDTH,
-  height: HEIGHT,
-  parent: document.body
+  height: HEIGHT
 });
 
-ctx.strokeStyle = 'gray';
+document.body.append(canvas);
 
-const line = createLine(WIDTH, HEIGHT);
-const lineLength = calcLineLength(line.start, line.end);
-
-generateTornLine(line.start, line.end, lineLength, parseInt(`${lineLength / 7}`, 10), Math.PI).forEach(({ x, y }) =>
-  ctx.lineTo(x, y)
-);
-
-// path.closePath();
-// ctx.clip();
-
-ctx.stroke();
-// ctx.fillRect(0, 0, WIDTH, HEIGHT);
+renderer(canvas, ctx, WIDTH, HEIGHT)();

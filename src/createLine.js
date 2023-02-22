@@ -1,23 +1,5 @@
 import random from 'lodash.random';
-
-const generateSides = (width, height) => ({
-  TOP: {
-    start: { x: 0, y: 0 },
-    end: { x: width, y: 0 }
-  },
-  RIGHT: {
-    start: { x: width, y: 0 },
-    end: { x: width, y: height }
-  },
-  BOTTOM: {
-    start: { x: 0, y: height },
-    end: { x: width, y: height }
-  },
-  LEFT: {
-    start: { x: 0, y: 0 },
-    end: { x: 0, y: height }
-  }
-});
+import shuffle from 'lodash.shuffle';
 
 const getRandomPointOnSide = ({ start, end }) => {
   return {
@@ -26,17 +8,8 @@ const getRandomPointOnSide = ({ start, end }) => {
   };
 };
 
-const createRandomLine = (width, height) => {
-  const { TOP, RIGHT, BOTTOM, LEFT } = generateSides(width, height);
-  let sides = [TOP, RIGHT, BOTTOM, LEFT];
-
-  const startSideIdx = random(0, sides.length - 1);
-  const startSide = sides[startSideIdx];
-
-  sides = sides.filter((_, i) => i !== startSideIdx);
-
-  const endSideIdx = random(0, sides.length - 1);
-  const endSide = sides[endSideIdx];
+const createRandomLine = ({ TOP, RIGHT, BOTTOM, LEFT }) => {
+  const [startSide, endSide] = shuffle([TOP, RIGHT, BOTTOM, LEFT]);
 
   return {
     start: getRandomPointOnSide(startSide),
