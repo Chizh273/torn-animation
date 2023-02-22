@@ -1,11 +1,13 @@
 import createCanvas from './createCanvas';
-import renderer from './renderer';
+import Animation from './animation';
 
 const WIDTH = window.innerWidth;
 const HEIGHT = window.innerHeight;
 
-const { ctx, canvas } = createCanvas(WIDTH, HEIGHT);
+const canvas = createCanvas(WIDTH, HEIGHT);
 
 document.body.append(canvas);
 
-renderer(canvas, ctx, WIDTH, HEIGHT)();
+const renderer = new Animation(canvas);
+
+renderer.render();

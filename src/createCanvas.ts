@@ -4,7 +4,7 @@ const createCanvas = (width: number, height: number) => {
   canvas.width = width;
   canvas.height = height;
 
-  return { canvas, ctx: canvas.getContext('2d') as CanvasRenderingContext2D };
+  return canvas;
 };
 
 export default createCanvas;

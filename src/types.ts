@@ -8,12 +8,16 @@ export type Line = {
   end: Point;
 };
 
+export type PointSide = 'LEFT' | 'RIGHT' | 'TOP' | 'BOTTOM';
+
 export type Sides = {
   TOP: Line;
   RIGHT: Line;
   BOTTOM: Line;
   LEFT: Line;
 };
+
+export type FigureSide = 'left' | 'right';
 
 export type FigureSideShape = {
   left: Point[];
