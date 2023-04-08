@@ -1,8 +1,8 @@
 // @ts-ignore
 import { fromPromise } from 'rxjs/src/internal/observable/innerFrom';
-import { Observable } from 'rxjs';
+import { map, Observable, of } from 'rxjs';
 
-import { Point } from '../types';
+import { Figure, Point } from './types';
 
 export default class Canvas {
   private readonly _ctx: CanvasRenderingContext2D;
@@ -43,22 +43,21 @@ export default class Canvas {
     );
   }
 
-  public drawFigure(path: Point[], color = 'red'): Observable<string> {
+  public drawFigure({ left, right }: Figure, lineColor: string, backgroundColor: string): Observable<string> {
     return fromPromise(
       Promise.resolve().then(() => {
         this.ctx.lineWidth = 4;
-        this.ctx.strokeStyle = color;
+        this.ctx.strokeStyle = lineColor;
+        this.ctx.fillStyle = backgroundColor;
 
         this.ctx.beginPath();
-        path.forEach(({ x, y }) => this.ctx.lineTo(x, y));
+        [...left, ...right].forEach(({ x, y }) => this.ctx.lineTo(x, y));
         this.ctx.closePath();
 
+        this.ctx.fill();
         this.ctx.stroke();
-        this.ctx.clip();
-
-        return this.canvas.toDataURL();
       })
-    );
+    ).pipe(map(() => this.canvas.toDataURL()));
   }
 
   public clear(): Observable<void> {
@@ -67,5 +66,17 @@ export default class Canvas {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       })
     );
+  }
+
+  public toDataUrl() {
+    return of(this.canvas.toDataURL());
+  }
+
+  public fill(color: string) {
+    this.ctx.fillStyle = color;
+    this.ctx.beginPath();
+    this.ctx.rect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.closePath();
+    this.ctx.fill();
   }
 }

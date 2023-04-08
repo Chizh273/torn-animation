@@ -1,4 +1,4 @@
-import { Point } from './types';
+import { Point } from '../types';
 
 const calcLineLength = (start: Point, end: Point) => {
   const x = (end.x - start.x) ** 2;

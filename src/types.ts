@@ -8,8 +8,6 @@ export type Line = {
   end: Point;
 };
 
-export type PointSide = 'LEFT' | 'RIGHT' | 'TOP' | 'BOTTOM';
-
 export type Sides = {
   TOP: Line;
   RIGHT: Line;
@@ -17,11 +15,7 @@ export type Sides = {
   LEFT: Line;
 };
 
-export type FigureSide = 'left' | 'right';
-
-export type FigureSideShape = {
-  startSide: PointSide;
+export type Figure = {
   left: Point[];
-  endSide: PointSide;
   right: Point[];
 };

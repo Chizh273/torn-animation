@@ -1,44 +1,41 @@
 import { BehaviorSubject, filter, forkJoin, map, switchMap, tap } from 'rxjs';
 
-import Canvas from './canvas/canvas';
-import createLine from './math/createLine';
-import calcLineLength from './math/calcLineLength';
-import generateTornLine from './math/generateTornLine';
-import generateSides from './math/generateSides';
-import generateFigureShape from './math/generateFigureShape';
 import { Line, Point } from './types';
-import calcLineAngle from './math/calcLineAngle';
-import calcPointInPolarSystem from './math/calcPointInPolarSystem';
+import Canvas from './canvas';
+import {
+  applyOffset,
+  calcLineAngle,
+  calcLineLength,
+  calcPointInPolarSystem,
+  createLine,
+  generateSides,
+  generateTornLine
+} from './math';
 
 export default class Animation {
-  private colors = ['red', 'green', 'black'];
-
-  private realCanvas = new Canvas(this.document.createElement('canvas'), this.width, this.height);
-
-  private fakeCanvas = new Canvas(this.document.createElement('canvas'), this.width, this.height);
-
-  private readonly leftSideImg = this.document.createElement('img');
-
-  private readonly rightSideImg = this.document.createElement('img');
-
   private readonly _tick$ = new BehaviorSubject(0);
 
   private readonly sides = generateSides(this.width, this.height);
 
   private currentLine!: Line;
 
+  private tornLine!: Point[];
+
   public get tick$() {
-    return this._tick$.asObservable().pipe(filter((time) => time < 2000));
+    return this._tick$.asObservable();
   }
 
   constructor(
-    private readonly document: Document,
+    private readonly canvas: Canvas,
+    private readonly prevCanvasImg: HTMLImageElement,
     private readonly width: number,
     private readonly height: number,
-    private readonly offset: Point
+    private readonly offset: Point,
+    private readonly lineLifeTicks = 100,
+    private readonly speed = 7,
+    private readonly backgroundColor = 'black',
+    private readonly lineColor = 'white'
   ) {
-    document.body.append(this.realCanvas.canvas);
-
     this.setup();
   }
 
@@ -47,49 +44,37 @@ export default class Animation {
   }
 
   private setup() {
-    // Generate and save left and right figures every 300ms.
+    this.canvas.fill(this.backgroundColor);
+
+    // Generate torn line every ${this.speed} ticks.
     this.tick$
       .pipe(
-        filter((time) => time % 1000 === 0),
-        map(() => {
-          this.currentLine = createLine(this.sides, this.offset);
-          const lineLength = calcLineLength(this.currentLine.start, this.currentLine.end);
-
-          const line = generateTornLine(
-            this.currentLine.start,
-            this.currentLine.end,
-            lineLength,
-            parseInt(`${lineLength / 7}`, 10),
-            Math.PI
-          );
-
-          return generateFigureShape(line, this.width, this.height, this.sides);
+        filter((time) => time % this.lineLifeTicks === 0),
+        switchMap(() => {
+          return this.canvas.toDataUrl();
         }),
-        switchMap((figure) => {
-          return forkJoin([
-            this.resetFakeCanvas(),
-            this.fakeCanvas.drawFigure(figure.left),
-            this.resetFakeCanvas(),
-            this.fakeCanvas.drawFigure(figure.right),
-            this.fakeCanvas.reset()
-          ]);
-        }),
-        tap(([leftReset, left, rightReset, right]) => {
-          this.leftSideImg.remove();
-          this.leftSideImg.src = left;
-          this.rightSideImg.remove();
-          this.rightSideImg.src = right;
-
-          console.log({ left, right });
+        tap((canvasImg) => {
+          this.prevCanvasImg.src = canvasImg;
         })
       )
-      .subscribe();
+      .subscribe(() => {
+        this.currentLine = createLine(this.sides, this.offset);
+        const lineLength = calcLineLength(this.currentLine.start, this.currentLine.end);
 
-    // Draw and animate parts on real canvas.
+        this.tornLine = generateTornLine(
+          this.currentLine.start,
+          this.currentLine.end,
+          lineLength,
+          parseInt(`${lineLength / 5}`, 10),
+          Math.PI
+        );
+      });
+
+    // Draw and animate torn line on the canvas.
     this.tick$
       .pipe(
-        filter((time) => time % 1000 !== 0),
-        map((time) => time % 1000),
+        filter((time) => time % this.lineLifeTicks !== 0),
+        map((time) => time % this.lineLifeTicks),
         map((timer) => {
           const endPointWithoutOffset = {
             x: this.currentLine.end.x - this.currentLine.start.x,
@@ -98,23 +83,23 @@ export default class Animation {
           const lineRadianAngle = calcLineAngle(endPointWithoutOffset);
 
           return {
-            left: calcPointInPolarSystem(lineRadianAngle + Math.PI / 2, timer / 25),
-            right: calcPointInPolarSystem(lineRadianAngle - Math.PI / 2, timer / 25)
+            left: calcPointInPolarSystem(lineRadianAngle + Math.PI / 2, timer / this.speed),
+            right: calcPointInPolarSystem(lineRadianAngle - Math.PI / 2, timer / this.speed)
           };
         }),
-        switchMap(({ left, right }) =>
+
+        map(({ left, right }) => ({
+          left: this.tornLine.map((point) => applyOffset(point, left)),
+          right: this.tornLine.reverse().map((point) => applyOffset(point, right))
+        })),
+
+        switchMap((figure) =>
           forkJoin([
-            this.realCanvas.reset(),
-            this.realCanvas.clear(),
-            this.realCanvas.drawImage(this.leftSideImg, left),
-            this.realCanvas.drawImage(this.rightSideImg, right)
+            this.canvas.drawImage(this.prevCanvasImg, { x: 0, y: 0 }),
+            this.canvas.drawFigure(figure, this.lineColor, this.backgroundColor)
           ])
         )
       )
       .subscribe();
-  }
-
-  private resetFakeCanvas() {
-    return forkJoin([this.fakeCanvas.reset(), this.fakeCanvas.drawImage(this.realCanvas.canvas, { x: 0, y: 0 })]);
   }
 }
