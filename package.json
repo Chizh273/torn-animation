@@ -11,7 +11,9 @@
     "lint": "eslint ./src/**/*.ts",
     "lint:fix": "npm run lint -- --fix",
     "format": "prettier --write 'src/**/*.ts' --config ./.prettierrc",
-    "serve:build": "http-server dist"
+    "serve:build": "http-server dist",
+    "predeploy": "NODE_ENV=production parcel build --no-cache",
+    "deploy": "gh-pages -d dist"
   },
   "author": "",
   "lint-staged": {
