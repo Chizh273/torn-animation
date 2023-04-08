@@ -1,0 +1,1 @@
+{"mappings":"AAAA;;;;;AAKA","sources":["src/styles.css"],"sourcesContent":["body {\n    position: relative;\n    overflow: hidden;\n}\n\ncanvas {\n    position: absolute;\n    top: -300px;\n    left: -300px;\n    /*background-color: #000;*/\n}\n"],"names":[],"version":3,"file":"index.4d663569.css.map","sourceRoot":"/__parcel_source_root/"}
