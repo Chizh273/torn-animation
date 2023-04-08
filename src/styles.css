@@ -1,5 +1,11 @@
+body {
+    position: relative;
+    overflow: hidden;
+}
+
 canvas {
-    width: 100vw;
-    height: 100vh;
+    position: absolute;
+    top: -300px;
+    left: -300px;
     /*background-color: #000;*/
 }

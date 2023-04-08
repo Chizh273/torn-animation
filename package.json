@@ -39,6 +39,7 @@
   "dependencies": {
     "lodash.random": "^3.2.0",
     "lodash.shuffle": "^4.2.0",
-    "normalize.css": "^8.0.1"
+    "normalize.css": "^8.0.1",
+    "rxjs": "~7.4.0"
   }
 }

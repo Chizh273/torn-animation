@@ -1,4 +1,4 @@
-import { Sides } from './types';
+import { Sides } from '../types';
 
 const generateSides = (width: number, height: number): Sides => ({
   TOP: {

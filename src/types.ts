@@ -20,6 +20,8 @@ export type Sides = {
 export type FigureSide = 'left' | 'right';
 
 export type FigureSideShape = {
+  startSide: PointSide;
   left: Point[];
+  endSide: PointSide;
   right: Point[];
 };

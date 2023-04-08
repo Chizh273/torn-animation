@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "lib": [
-      "ES2021",
+      "ES2022",
       "dom"
     ],
     "allowSyntheticDefaultImports": true,
@@ -18,8 +18,8 @@
     "experimentalDecorators": true,
     "moduleResolution": "node",
     "importHelpers": true,
-    "target": "ES2021",
-    "module": "es6",
-    "useDefineForClassFields": false
+    "target": "es2015",
+    "module": "es2015",
+    "useDefineForClassFields": false,
   }
 }

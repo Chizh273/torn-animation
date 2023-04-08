@@ -1,133 +1,120 @@
-import createLine from './createLine';
-import calcLineLength from './calcLineLength';
-import generateTornLine from './generateTornLine';
-import createCanvas from './createCanvas';
-import generateSides from './generateSides';
-import { Point, Sides } from './types';
-import generateFigure from './generateFigureShape';
-import { rotate180 } from './rotate';
+import { BehaviorSubject, filter, forkJoin, map, switchMap, tap } from 'rxjs';
+
+import Canvas from './canvas/canvas';
+import createLine from './math/createLine';
+import calcLineLength from './math/calcLineLength';
+import generateTornLine from './math/generateTornLine';
+import generateSides from './math/generateSides';
+import generateFigureShape from './math/generateFigureShape';
+import { Line, Point } from './types';
+import calcLineAngle from './math/calcLineAngle';
+import calcPointInPolarSystem from './math/calcPointInPolarSystem';
 
 export default class Animation {
-  protected canvasWidth: number;
+  private colors = ['red', 'green', 'black'];
 
-  protected canvasHeight: number;
+  private realCanvas = new Canvas(this.document.createElement('canvas'), this.width, this.height);
 
-  protected ctx: CanvasRenderingContext2D;
+  private fakeCanvas = new Canvas(this.document.createElement('canvas'), this.width, this.height);
 
-  protected fakeCanvas: HTMLCanvasElement;
+  private readonly leftSideImg = this.document.createElement('img');
 
-  protected fakeCtx: CanvasRenderingContext2D;
+  private readonly rightSideImg = this.document.createElement('img');
 
-  protected leftImg = new Image();
+  private readonly _tick$ = new BehaviorSubject(0);
 
-  protected rightImg = new Image();
+  private readonly sides = generateSides(this.width, this.height);
 
-  protected sides: Sides;
+  private currentLine!: Line;
 
-  protected currentPath: Point[] = [];
-
-  private timer = 0;
-
-  constructor(protected canvas: HTMLCanvasElement) {
-    this.canvasWidth = canvas.width;
-    this.canvasHeight = canvas.height;
-
-    this.ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-    this.sides = generateSides(canvas.width, canvas.height);
-
-    this.fakeCanvas = createCanvas(canvas.width, canvas.height);
-    this.fakeCtx = this.fakeCanvas.getContext('2d') as CanvasRenderingContext2D;
-
-    // document.body.append(this.fakeCanvas);
-    //
-    // this.leftImg.classList.add('left');
-    // this.rightImg.classList.add('right');
-    //
-    // document.body.append(this.leftImg);
-    // document.body.append(this.rightImg);
-
-    // Setup ctx's colors.
-    this.ctx.strokeStyle = 'green';
-    this.fakeCtx.strokeStyle = 'red';
-    this.ctx.fillStyle = 'red';
-    this.fakeCtx.fillStyle = 'red';
+  public get tick$() {
+    return this._tick$.asObservable().pipe(filter((time) => time < 2000));
   }
 
-  generateFigure() {
-    const line = createLine(this.sides);
-    const lineLength = calcLineLength(line.start, line.end);
+  constructor(
+    private readonly document: Document,
+    private readonly width: number,
+    private readonly height: number,
+    private readonly offset: Point
+  ) {
+    document.body.append(this.realCanvas.canvas);
 
-    return [line.start, line.end];
-
-    return generateTornLine(line.start, line.end, lineLength, parseInt(`${lineLength / 7}`, 10), Math.PI);
+    this.setup();
   }
 
-  drawFigure(path: Point[]) {
-    this.ctx.lineWidth = 4;
-    this.ctx.strokeStyle = 'red';
-    this.ctx.fillStyle = 'black';
-
-    this.ctx.beginPath();
-    path.forEach(({ x, y }) => this.ctx.lineTo(x, y));
-    this.ctx.closePath();
-
-    this.ctx.stroke();
-    this.ctx.fill();
-    this.ctx.clip();
-
-    return this.canvas.toDataURL();
+  public dispatch() {
+    this._tick$.next(this._tick$.value + 1);
   }
 
-  render() {
-    if (this.timer % 100 === 0) {
-      this.currentPath = this.generateFigure();
-      const figure = generateFigure(this.currentPath, this.canvasWidth, this.canvasHeight, this.sides);
+  private setup() {
+    // Generate and save left and right figures every 300ms.
+    this.tick$
+      .pipe(
+        filter((time) => time % 1000 === 0),
+        map(() => {
+          this.currentLine = createLine(this.sides, this.offset);
+          const lineLength = calcLineLength(this.currentLine.start, this.currentLine.end);
 
-      // const movingLine = rotate180({ start: this.currentPath[0], end: this.currentPath[this.currentPath.length - 1] });
+          const line = generateTornLine(
+            this.currentLine.start,
+            this.currentLine.end,
+            lineLength,
+            parseInt(`${lineLength / 7}`, 10),
+            Math.PI
+          );
 
-      // this.ctx.strokeStyle = 'red';
-      //
-      // this.ctx.beginPath();
-      //
-      // // [this.currentPath[0], this.currentPath[this.currentPath.length - 1]].forEach(({ x, y }) => this.ctx.lineTo(x, y));
-      //
-      // this.ctx.stroke();
-      //
-      // this.ctx.strokeStyle = 'red';
-      //
-      // this.ctx.beginPath();
-      //
-      // [ this.currentPath[0], this.currentPath[this.currentPath.length - 1]].forEach(({ x, y }) => this.ctx.lineTo(x, y));
-      // this.ctx.stroke();
+          return generateFigureShape(line, this.width, this.height, this.sides);
+        }),
+        switchMap((figure) => {
+          return forkJoin([
+            this.resetFakeCanvas(),
+            this.fakeCanvas.drawFigure(figure.left),
+            this.resetFakeCanvas(),
+            this.fakeCanvas.drawFigure(figure.right),
+            this.fakeCanvas.reset()
+          ]);
+        }),
+        tap(([leftReset, left, rightReset, right]) => {
+          this.leftSideImg.remove();
+          this.leftSideImg.src = left;
+          this.rightSideImg.remove();
+          this.rightSideImg.src = right;
 
-      this.leftImg.src = this.drawFigure(figure.right);
+          console.log({ left, right });
+        })
+      )
+      .subscribe();
 
-      // @ts-ignore https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/reset
-      this.ctx.reset();
+    // Draw and animate parts on real canvas.
+    this.tick$
+      .pipe(
+        filter((time) => time % 1000 !== 0),
+        map((time) => time % 1000),
+        map((timer) => {
+          const endPointWithoutOffset = {
+            x: this.currentLine.end.x - this.currentLine.start.x,
+            y: this.currentLine.end.y - this.currentLine.start.y
+          };
+          const lineRadianAngle = calcLineAngle(endPointWithoutOffset);
 
-      this.rightImg.src = this.drawFigure(figure.left);
-    } else {
-      // @ts-ignore https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/reset
-      this.ctx.reset();
+          return {
+            left: calcPointInPolarSystem(lineRadianAngle + Math.PI / 2, timer / 25),
+            right: calcPointInPolarSystem(lineRadianAngle - Math.PI / 2, timer / 25)
+          };
+        }),
+        switchMap(({ left, right }) =>
+          forkJoin([
+            this.realCanvas.reset(),
+            this.realCanvas.clear(),
+            this.realCanvas.drawImage(this.leftSideImg, left),
+            this.realCanvas.drawImage(this.rightSideImg, right)
+          ])
+        )
+      )
+      .subscribe();
+  }
 
-      // const movingLine = rotate180({ start: this.currentPath[0], end: this.currentPath[this.currentPath.length - 1] });
-      //
-      // console.log(movingLine, { start: this.currentPath[0], end: this.currentPath[this.currentPath.length - 1] });
-
-      this.ctx.drawImage(
-        this.leftImg,
-        (this.timer / 10) * -1,
-        (this.timer / 10) * -1,
-        this.canvasWidth,
-        this.canvasHeight
-      );
-      this.ctx.drawImage(this.rightImg, this.timer / 10, this.timer / 10, this.canvasWidth, this.canvasHeight);
-    }
-
-    this.timer += 1;
-
-    if (this.timer < 1000) {
-      requestAnimationFrame(() => this.render());
-    }
+  private resetFakeCanvas() {
+    return forkJoin([this.fakeCanvas.reset(), this.fakeCanvas.drawImage(this.realCanvas.canvas, { x: 0, y: 0 })]);
   }
 }

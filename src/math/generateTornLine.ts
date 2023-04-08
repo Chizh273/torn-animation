@@ -1,8 +1,8 @@
 import random from 'lodash.random';
-import { Point } from './types';
+import { Point } from '../types';
 
 // https://stackoverflow.com/a/34372870
-const getPointOnLine = (lineStart: Point, lineEnd: Point, lineDistance: number, distanceToPoint: number) => {
+export const getPointOnLine = (lineStart: Point, lineEnd: Point, lineDistance: number, distanceToPoint: number) => {
   const fractionOfTotal = distanceToPoint / lineDistance;
 
   return {

@@ -1,13 +1,11 @@
-import createCanvas from './createCanvas';
 import Animation from './animation';
 
-const WIDTH = window.innerWidth;
-const HEIGHT = window.innerHeight;
+const WIDTH = window.innerWidth + 600;
+const HEIGHT = window.innerHeight + 600;
 
-const canvas = createCanvas(WIDTH, HEIGHT);
+const animation = new Animation(document, WIDTH, HEIGHT, { x: 600, y: 600 });
 
-document.body.append(canvas);
-
-const renderer = new Animation(canvas);
-
-renderer.render();
+(function render() {
+  animation.dispatch();
+  requestAnimationFrame(render);
+})();

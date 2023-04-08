@@ -1,4 +1,4 @@
-import { FigureSide, FigureSideShape, Point, PointSide, Sides } from './types';
+import { FigureSide, FigureSideShape, Point, PointSide, Sides } from '../types';
 
 export const getPointSide = (point: Point, canvasWidth: number, canvasHeight: number): PointSide => {
   if (point.x === 0 && point.y > 0 && point.y <= canvasHeight) {
@@ -62,6 +62,8 @@ const generateFigure = (path: Point[], width: number, height: number, sides: Sid
   const endSide = getPointSide(path[path.length - 1], width, height);
 
   return {
+    startSide,
+    endSide,
     left: [...path, ...generateFigureClosingPath(startSide, endSide, sides, 'left')],
     right: [...path, ...generateFigureClosingPath(startSide, endSide, sides, 'right')]
   };
