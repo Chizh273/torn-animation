@@ -103,7 +103,6 @@ export default class AnimationV2 {
         }),
         switchMap(({ left, right }) =>
           forkJoin([
-            this.realCanvas.reset(),
             this.realCanvas.clear(),
             fromPromise(Promise.resolve().then(() => this.realCanvas.fill(this.backgroundColor))),
             this.realCanvas.drawImage(this.leftSideImg, left),

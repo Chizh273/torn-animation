@@ -26,15 +26,6 @@ export default class Canvas {
     this._ctx = this._canvas.getContext('2d') as CanvasRenderingContext2D;
   }
 
-  public reset(): Observable<void> {
-    return fromPromise(
-      Promise.resolve().then(() => {
-        // @ts-ignore
-        this.ctx.reset();
-      }),
-    );
-  }
-
   public save() {
     return fromPromise(Promise.resolve().then(() => this.ctx.save()));
   }
