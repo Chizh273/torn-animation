@@ -581,14 +581,18 @@ var _innerFrom = require("rxjs/src/internal/observable/innerFrom");
 var _math = require("./math");
 class AnimationV2 {
     get tick$() {
-        return this._tick$.asObservable().pipe((0, _rxjs.filter)((tick)=>tick < 3000));
+        return this._tick$.asObservable();
     }
-    constructor(canvasFactory, document, width, height, offset){
+    constructor(canvasFactory, document, width, height, offset, lineLifeTicks = 100, speed = 7, backgroundColor = "black", lineColor = "white"){
         this.canvasFactory = canvasFactory;
         this.document = document;
         this.width = width;
         this.height = height;
         this.offset = offset;
+        this.lineLifeTicks = lineLifeTicks;
+        this.speed = speed;
+        this.backgroundColor = backgroundColor;
+        this.lineColor = lineColor;
         this.realCanvas = this.canvasFactory.createCanvas(this.width, this.height);
         this.leftSideImg = this.document.createElement("img");
         this.rightSideImg = this.document.createElement("img");
@@ -602,9 +606,9 @@ class AnimationV2 {
         this._tick$.next(this._tick$.value + 1);
     }
     setup() {
-        this.realCanvas.fill("black");
-        // Generate and save left and right figures every 300ms.
-        this.tick$.pipe((0, _rxjs.filter)((time)=>time % 300 === 0), (0, _rxjs.map)(()=>{
+        this.realCanvas.fill(this.backgroundColor);
+        // Generate and save left and right figures every this.lineLifeTicksms.
+        this.tick$.pipe((0, _rxjs.filter)((time)=>time % this.lineLifeTicks === 0), (0, _rxjs.map)(()=>{
             this.currentLine = (0, _math.createLine)(this.sides, this.offset);
             const lineLength = (0, _math.calcLineLength)(this.currentLine.start, this.currentLine.end);
             const line = (0, _math.generateTornLine)(this.currentLine.start, this.currentLine.end, lineLength, parseInt(`${lineLength / 7}`, 10), Math.PI);
@@ -617,27 +621,27 @@ class AnimationV2 {
             this.rightSideImg.src = right;
         })).subscribe();
         // Draw and animate parts on real canvas.
-        this.tick$.pipe((0, _rxjs.filter)((time)=>time % 300 !== 0), (0, _rxjs.map)((time)=>time % 300), (0, _rxjs.map)((timer)=>{
+        this.tick$.pipe((0, _rxjs.filter)((time)=>time % this.lineLifeTicks !== 0), (0, _rxjs.map)((time)=>time % this.lineLifeTicks), (0, _rxjs.map)((timer)=>{
             const endPointWithoutOffset = {
                 x: this.currentLine.end.x - this.currentLine.start.x,
                 y: this.currentLine.end.y - this.currentLine.start.y
             };
             const lineRadianAngle = (0, _math.calcLineAngle)(endPointWithoutOffset);
             return {
-                left: (0, _math.calcPointInPolarSystem)(lineRadianAngle - Math.PI / 2, timer / 25),
-                right: (0, _math.calcPointInPolarSystem)(lineRadianAngle + Math.PI / 2, timer / 25)
+                left: (0, _math.calcPointInPolarSystem)(lineRadianAngle - Math.PI / 2, timer / this.speed),
+                right: (0, _math.calcPointInPolarSystem)(lineRadianAngle + Math.PI / 2, timer / this.speed)
             };
         }), (0, _rxjs.switchMap)(({ left , right  })=>(0, _rxjs.forkJoin)([
                 this.realCanvas.reset(),
                 this.realCanvas.clear(),
-                (0, _innerFrom.fromPromise)(Promise.resolve().then(()=>this.realCanvas.fill("black"))),
+                (0, _innerFrom.fromPromise)(Promise.resolve().then(()=>this.realCanvas.fill(this.backgroundColor))),
                 this.realCanvas.drawImage(this.leftSideImg, left),
                 this.realCanvas.drawImage(this.rightSideImg, right)
             ]))).subscribe();
     }
     drawPathOnTempCanvas(path) {
         return (0, _rxjs.of)(this.canvasFactory.createCanvas(this.width, this.height)).pipe((0, _rxjs.switchMap)((canvas)=>(0, _rxjs.forkJoin)([
-                canvas.drawPath(path, "white", "black"),
+                canvas.drawPath(path, this.lineColor, this.backgroundColor),
                 canvas.drawImage(this.realCanvas.canvas, {
                     x: 0,
                     y: 0
