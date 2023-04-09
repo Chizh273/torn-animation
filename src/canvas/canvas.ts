@@ -2,7 +2,7 @@
 import { fromPromise } from 'rxjs/src/internal/observable/innerFrom';
 import { map, Observable, of } from 'rxjs';
 
-import { Figure, Point } from './types';
+import { Figure, Point } from '../types';
 
 export default class Canvas {
   private readonly _ctx: CanvasRenderingContext2D;
@@ -18,7 +18,7 @@ export default class Canvas {
   constructor(
     private readonly _canvas: HTMLCanvasElement,
     private readonly width: number,
-    private readonly height: number
+    private readonly height: number,
   ) {
     this._canvas.width = width;
     this._canvas.height = height;
@@ -31,16 +31,42 @@ export default class Canvas {
       Promise.resolve().then(() => {
         // @ts-ignore
         this.ctx.reset();
-      })
+      }),
     );
+  }
+
+  public save() {
+    return fromPromise(Promise.resolve().then(() => this.ctx.save()));
+  }
+
+  public restore() {
+    return fromPromise(Promise.resolve().then(() => this.ctx.restore()));
   }
 
   public drawImage(img: HTMLImageElement | HTMLCanvasElement, point: Point): Observable<void> {
     return fromPromise(
       Promise.resolve().then(() => {
         this.ctx.drawImage(img, point.x, point.y, this.canvas.width, this.canvas.height);
-      })
+      }),
     );
+  }
+
+  public drawPath(path: Point[], lineColor: string, backgroundColor: string): Observable<string> {
+    return fromPromise(
+      Promise.resolve().then(() => {
+        this.ctx.lineWidth = 7;
+        this.ctx.strokeStyle = lineColor;
+        this.ctx.fillStyle = backgroundColor;
+
+        this.ctx.beginPath();
+        path.forEach(({ x, y }) => this.ctx.lineTo(x, y));
+        this.ctx.closePath();
+
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.clip();
+      }),
+    ).pipe(map(() => this.canvas.toDataURL()));
   }
 
   public drawFigure({ left, right }: Figure, lineColor: string, backgroundColor: string): Observable<string> {
@@ -56,7 +82,7 @@ export default class Canvas {
 
         this.ctx.fill();
         this.ctx.stroke();
-      })
+      }),
     ).pipe(map(() => this.canvas.toDataURL()));
   }
 
@@ -64,7 +90,7 @@ export default class Canvas {
     return fromPromise(
       Promise.resolve().then(() => {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      })
+      }),
     );
   }
 

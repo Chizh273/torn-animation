@@ -1,7 +1,7 @@
 import { BehaviorSubject, filter, forkJoin, map, switchMap, tap } from 'rxjs';
 
 import { Line, Point } from './types';
-import Canvas from './canvas';
+import { Canvas } from './canvas';
 import {
   applyOffset,
   calcLineAngle,

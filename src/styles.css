@@ -8,3 +8,12 @@ canvas {
     top: -300px;
     left: -300px;
 }
+
+a {
+    position: absolute;
+    z-index: 10;
+    color: #fff;
+    text-decoration: none;
+    margin: 10px;
+    right: 0;
+}
