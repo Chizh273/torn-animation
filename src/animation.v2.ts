@@ -28,7 +28,7 @@ export default class AnimationV2 {
   private currentLine!: Line;
 
   public get tick$() {
-    return this._tick$.asObservable().pipe(filter((tick) => tick < 3000));
+    return this._tick$.asObservable();
   }
 
   constructor(
@@ -36,7 +36,11 @@ export default class AnimationV2 {
     private readonly document: Document,
     private readonly width: number,
     private readonly height: number,
-    private readonly offset: Point
+    private readonly offset: Point,
+    private readonly lineLifeTicks = 100,
+    private readonly speed = 7,
+    private readonly backgroundColor = 'black',
+    private readonly lineColor = 'white'
   ) {
     const root = document.querySelector('.root');
 
@@ -50,12 +54,12 @@ export default class AnimationV2 {
   }
 
   private setup() {
-    this.realCanvas.fill('black');
+    this.realCanvas.fill(this.backgroundColor);
 
-    // Generate and save left and right figures every 300ms.
+    // Generate and save left and right figures every this.lineLifeTicksms.
     this.tick$
       .pipe(
-        filter((time) => time % 300 === 0),
+        filter((time) => time % this.lineLifeTicks === 0),
         map(() => {
           this.currentLine = createLine(this.sides, this.offset);
           const lineLength = calcLineLength(this.currentLine.start, this.currentLine.end);
@@ -83,8 +87,8 @@ export default class AnimationV2 {
     // Draw and animate parts on real canvas.
     this.tick$
       .pipe(
-        filter((time) => time % 300 !== 0),
-        map((time) => time % 300),
+        filter((time) => time % this.lineLifeTicks !== 0),
+        map((time) => time % this.lineLifeTicks),
         map((timer) => {
           const endPointWithoutOffset = {
             x: this.currentLine.end.x - this.currentLine.start.x,
@@ -93,15 +97,15 @@ export default class AnimationV2 {
           const lineRadianAngle = calcLineAngle(endPointWithoutOffset);
 
           return {
-            left: calcPointInPolarSystem(lineRadianAngle - Math.PI / 2, timer / 25),
-            right: calcPointInPolarSystem(lineRadianAngle + Math.PI / 2, timer / 25)
+            left: calcPointInPolarSystem(lineRadianAngle - Math.PI / 2, timer / this.speed),
+            right: calcPointInPolarSystem(lineRadianAngle + Math.PI / 2, timer / this.speed)
           };
         }),
         switchMap(({ left, right }) =>
           forkJoin([
             this.realCanvas.reset(),
             this.realCanvas.clear(),
-            fromPromise(Promise.resolve().then(() => this.realCanvas.fill('black'))),
+            fromPromise(Promise.resolve().then(() => this.realCanvas.fill(this.backgroundColor))),
             this.realCanvas.drawImage(this.leftSideImg, left),
             this.realCanvas.drawImage(this.rightSideImg, right)
           ])
@@ -114,7 +118,7 @@ export default class AnimationV2 {
     return of(this.canvasFactory.createCanvas(this.width, this.height)).pipe(
       switchMap((canvas) =>
         forkJoin([
-          canvas.drawPath(path, 'white', 'black'),
+          canvas.drawPath(path, this.lineColor, this.backgroundColor),
           canvas.drawImage(this.realCanvas.canvas, { x: 0, y: 0 })
         ]).pipe(switchMap(() => canvas.toDataUrl()))
       )
