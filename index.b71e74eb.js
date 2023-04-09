@@ -632,7 +632,6 @@ class AnimationV2 {
                 right: (0, _math.calcPointInPolarSystem)(lineRadianAngle + Math.PI / 2, timer / this.speed)
             };
         }), (0, _rxjs.switchMap)(({ left , right  })=>(0, _rxjs.forkJoin)([
-                this.realCanvas.reset(),
                 this.realCanvas.clear(),
                 (0, _innerFrom.fromPromise)(Promise.resolve().then(()=>this.realCanvas.fill(this.backgroundColor))),
                 this.realCanvas.drawImage(this.leftSideImg, left),

@@ -632,12 +632,6 @@ class Canvas {
         this._canvas.height = height;
         this._ctx = this._canvas.getContext("2d");
     }
-    reset() {
-        return (0, _innerFrom.fromPromise)(Promise.resolve().then(()=>{
-            // @ts-ignore
-            this.ctx.reset();
-        }));
-    }
     save() {
         return (0, _innerFrom.fromPromise)(Promise.resolve().then(()=>this.ctx.save()));
     }
