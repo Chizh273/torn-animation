@@ -142,13 +142,13 @@
       this[globalName] = mainExports;
     }
   }
-})({"3LmCz":[function(require,module,exports) {
+})({"gSPSh":[function(require,module,exports) {
 var global = arguments[3];
 var HMR_HOST = null;
 var HMR_PORT = null;
 var HMR_SECURE = false;
 var HMR_ENV_HASH = "d6ea1d42532a7575";
-module.bundle.HMR_BUNDLE_ID = "5c1b77e3b71e74eb";
+module.bundle.HMR_BUNDLE_ID = "72847dac3bc10da8";
 "use strict";
 /* global HMR_HOST, HMR_PORT, HMR_ENV_HASH, HMR_SECURE, chrome, browser, globalThis, __parcel__import__, __parcel__importScripts__, ServiceWorkerGlobalScope */ /*::
 import type {
@@ -556,14 +556,17 @@ function hmrAccept(bundle, id) {
     });
 }
 
-},{}],"h7u1C":[function(require,module,exports) {
+},{}],"fOVfp":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+var _animationV1 = require("./animation.v1");
+var _animationV1Default = parcelHelpers.interopDefault(_animationV1);
 var _canvas = require("./canvas");
-var _animationV2 = require("./animation.v2");
-var _animationV2Default = parcelHelpers.interopDefault(_animationV2);
 const WIDTH = window.innerWidth + 600;
 const HEIGHT = window.innerHeight + 600;
-const animation = new (0, _animationV2Default.default)(new (0, _canvas.CanvasFactory)(document), document, WIDTH, HEIGHT, {
+const canvas = new (0, _canvas.Canvas)(document.createElement("canvas"), WIDTH, HEIGHT);
+const img = document.createElement("img");
+document.body.append(canvas.canvas);
+const animation = new (0, _animationV1Default.default)(canvas, img, WIDTH, HEIGHT, {
     x: 600,
     y: 600
 });
@@ -572,81 +575,69 @@ const animation = new (0, _animationV2Default.default)(new (0, _canvas.CanvasFac
     requestAnimationFrame(render);
 })();
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./canvas":"cYd8k","./animation.v2":"f6Zua"}],"f6Zua":[function(require,module,exports) {
+},{"./animation.v1":"iGAl6","./canvas":"cYd8k","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"iGAl6":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _rxjs = require("rxjs");
-// @ts-ignore
-var _innerFrom = require("rxjs/src/internal/observable/innerFrom");
 var _math = require("./math");
-class AnimationV2 {
+class Animation {
     get tick$() {
-        return this._tick$.asObservable().pipe((0, _rxjs.filter)((tick)=>tick < 3000));
+        return this._tick$.asObservable();
     }
-    constructor(canvasFactory, document, width, height, offset){
-        this.canvasFactory = canvasFactory;
-        this.document = document;
+    constructor(canvas, prevCanvasImg, width, height, offset, lineLifeTicks = 100, speed = 7, backgroundColor = "black", lineColor = "white"){
+        this.canvas = canvas;
+        this.prevCanvasImg = prevCanvasImg;
         this.width = width;
         this.height = height;
         this.offset = offset;
-        this.realCanvas = this.canvasFactory.createCanvas(this.width, this.height);
-        this.leftSideImg = this.document.createElement("img");
-        this.rightSideImg = this.document.createElement("img");
+        this.lineLifeTicks = lineLifeTicks;
+        this.speed = speed;
+        this.backgroundColor = backgroundColor;
+        this.lineColor = lineColor;
         this._tick$ = new (0, _rxjs.BehaviorSubject)(0);
         this.sides = (0, _math.generateSides)(this.width, this.height);
-        const root = document.querySelector(".root");
-        root?.appendChild(this.realCanvas.canvas);
         this.setup();
     }
     dispatch() {
         this._tick$.next(this._tick$.value + 1);
     }
     setup() {
-        this.realCanvas.fill("black");
-        // Generate and save left and right figures every 300ms.
-        this.tick$.pipe((0, _rxjs.filter)((time)=>time % 300 === 0), (0, _rxjs.map)(()=>{
+        this.canvas.fill(this.backgroundColor);
+        // Generate torn line every ${this.speed} ticks.
+        this.tick$.pipe((0, _rxjs.filter)((time)=>time % this.lineLifeTicks === 0), (0, _rxjs.switchMap)(()=>{
+            return this.canvas.toDataUrl();
+        }), (0, _rxjs.tap)((canvasImg)=>{
+            this.prevCanvasImg.src = canvasImg;
+        })).subscribe(()=>{
             this.currentLine = (0, _math.createLine)(this.sides, this.offset);
             const lineLength = (0, _math.calcLineLength)(this.currentLine.start, this.currentLine.end);
-            const line = (0, _math.generateTornLine)(this.currentLine.start, this.currentLine.end, lineLength, parseInt(`${lineLength / 7}`, 10), Math.PI);
-            return (0, _math.generateFigureShape)(line, this.width, this.height, this.sides);
-        }), (0, _rxjs.switchMap)((figure)=>(0, _rxjs.forkJoin)([
-                this.drawPathOnTempCanvas(figure.left),
-                this.drawPathOnTempCanvas(figure.right)
-            ])), (0, _rxjs.tap)(([left, right])=>{
-            this.leftSideImg.src = left;
-            this.rightSideImg.src = right;
-        })).subscribe();
-        // Draw and animate parts on real canvas.
-        this.tick$.pipe((0, _rxjs.filter)((time)=>time % 300 !== 0), (0, _rxjs.map)((time)=>time % 300), (0, _rxjs.map)((timer)=>{
+            this.tornLine = (0, _math.generateTornLine)(this.currentLine.start, this.currentLine.end, lineLength, parseInt(`${lineLength / 5}`, 10), Math.PI);
+        });
+        // Draw and animate torn line on the canvas.
+        this.tick$.pipe((0, _rxjs.filter)((time)=>time % this.lineLifeTicks !== 0), (0, _rxjs.map)((time)=>time % this.lineLifeTicks), (0, _rxjs.map)((timer)=>{
             const endPointWithoutOffset = {
                 x: this.currentLine.end.x - this.currentLine.start.x,
                 y: this.currentLine.end.y - this.currentLine.start.y
             };
             const lineRadianAngle = (0, _math.calcLineAngle)(endPointWithoutOffset);
             return {
-                left: (0, _math.calcPointInPolarSystem)(lineRadianAngle - Math.PI / 2, timer / 25),
-                right: (0, _math.calcPointInPolarSystem)(lineRadianAngle + Math.PI / 2, timer / 25)
+                left: (0, _math.calcPointInPolarSystem)(lineRadianAngle + Math.PI / 2, timer / this.speed),
+                right: (0, _math.calcPointInPolarSystem)(lineRadianAngle - Math.PI / 2, timer / this.speed)
             };
-        }), (0, _rxjs.switchMap)(({ left , right  })=>(0, _rxjs.forkJoin)([
-                this.realCanvas.reset(),
-                this.realCanvas.clear(),
-                (0, _innerFrom.fromPromise)(Promise.resolve().then(()=>this.realCanvas.fill("black"))),
-                this.realCanvas.drawImage(this.leftSideImg, left),
-                this.realCanvas.drawImage(this.rightSideImg, right)
-            ]))).subscribe();
-    }
-    drawPathOnTempCanvas(path) {
-        return (0, _rxjs.of)(this.canvasFactory.createCanvas(this.width, this.height)).pipe((0, _rxjs.switchMap)((canvas)=>(0, _rxjs.forkJoin)([
-                canvas.drawPath(path, "white", "black"),
-                canvas.drawImage(this.realCanvas.canvas, {
+        }), (0, _rxjs.map)(({ left , right  })=>({
+                left: this.tornLine.map((point)=>(0, _math.applyOffset)(point, left)),
+                right: this.tornLine.reverse().map((point)=>(0, _math.applyOffset)(point, right))
+            })), (0, _rxjs.switchMap)((figure)=>(0, _rxjs.forkJoin)([
+                this.canvas.drawImage(this.prevCanvasImg, {
                     x: 0,
                     y: 0
-                })
-            ]).pipe((0, _rxjs.switchMap)(()=>canvas.toDataUrl()))));
+                }),
+                this.canvas.drawFigure(figure, this.lineColor, this.backgroundColor)
+            ]))).subscribe();
     }
 }
-exports.default = AnimationV2;
+exports.default = Animation;
 
-},{"rxjs":"lLy7s","rxjs/src/internal/observable/innerFrom":"b7PZ7","./math":"itVG6","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["3LmCz","h7u1C"], "h7u1C", "parcelRequire6af4")
+},{"rxjs":"lLy7s","./math":"itVG6","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["gSPSh","fOVfp"], "fOVfp", "parcelRequire6af4")
 
-//# sourceMappingURL=index.b71e74eb.js.map
+//# sourceMappingURL=v1.3bc10da8.js.map

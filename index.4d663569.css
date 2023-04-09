@@ -9,4 +9,13 @@ canvas {
   left: -300px;
 }
 
+a {
+  z-index: 10;
+  color: #fff;
+  margin: 10px;
+  text-decoration: none;
+  position: absolute;
+  right: 0;
+}
+
 /*# sourceMappingURL=index.4d663569.css.map */
