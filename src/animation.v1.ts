@@ -9,8 +9,9 @@ import {
   calcPointInPolarSystem,
   createLine,
   generateSides,
-  generateTornLine
+  generateTornLine,
 } from './math';
+import { AnimationSettings } from './settings';
 
 export default class Animation {
   private readonly _tick$ = new BehaviorSubject(0);
@@ -31,10 +32,7 @@ export default class Animation {
     private readonly width: number,
     private readonly height: number,
     private readonly offset: Point,
-    private readonly lineLifeTicks = 100,
-    private readonly speed = 7,
-    private readonly backgroundColor = 'black',
-    private readonly lineColor = 'white'
+    private readonly settings: AnimationSettings,
   ) {
     this.setup();
   }
@@ -44,18 +42,18 @@ export default class Animation {
   }
 
   private setup() {
-    this.canvas.fill(this.backgroundColor);
+    this.canvas.fill(this.settings.data.backgroundColor);
 
     // Generate torn line every ${this.speed} ticks.
     this.tick$
       .pipe(
-        filter((time) => time % this.lineLifeTicks === 0),
+        filter((time) => time % this.settings.data.lineLifeTicks === 0),
         switchMap(() => {
           return this.canvas.toDataUrl();
         }),
         tap((canvasImg) => {
           this.prevCanvasImg.src = canvasImg;
-        })
+        }),
       )
       .subscribe(() => {
         this.currentLine = createLine(this.sides, this.offset);
@@ -66,39 +64,40 @@ export default class Animation {
           this.currentLine.end,
           lineLength,
           parseInt(`${lineLength / 5}`, 10),
-          Math.PI
+          Math.PI,
         );
       });
 
     // Draw and animate torn line on the canvas.
     this.tick$
       .pipe(
-        filter((time) => time % this.lineLifeTicks !== 0),
-        map((time) => time % this.lineLifeTicks),
+        filter((time) => time % this.settings.data.lineLifeTicks !== 0),
+        map((time) => time % this.settings.data.lineLifeTicks),
         map((timer) => {
           const endPointWithoutOffset = {
             x: this.currentLine.end.x - this.currentLine.start.x,
-            y: this.currentLine.end.y - this.currentLine.start.y
+            y: this.currentLine.end.y - this.currentLine.start.y,
           };
           const lineRadianAngle = calcLineAngle(endPointWithoutOffset);
+          const halfPI = Math.PI / 2;
 
           return {
-            left: calcPointInPolarSystem(lineRadianAngle + Math.PI / 2, timer / this.speed),
-            right: calcPointInPolarSystem(lineRadianAngle - Math.PI / 2, timer / this.speed)
+            left: calcPointInPolarSystem(lineRadianAngle + halfPI, timer / this.settings.data.distanceCoefficient),
+            right: calcPointInPolarSystem(lineRadianAngle - halfPI, timer / this.settings.data.distanceCoefficient),
           };
         }),
 
         map(({ left, right }) => ({
           left: this.tornLine.map((point) => applyOffset(point, left)),
-          right: this.tornLine.reverse().map((point) => applyOffset(point, right))
+          right: this.tornLine.reverse().map((point) => applyOffset(point, right)),
         })),
 
         switchMap((figure) =>
           forkJoin([
             this.canvas.drawImage(this.prevCanvasImg, { x: 0, y: 0 }),
-            this.canvas.drawFigure(figure, this.lineColor, this.backgroundColor)
-          ])
-        )
+            this.canvas.drawFigure(figure, this.settings.data.lineColor, this.settings.data.backgroundColor),
+          ]),
+        ),
       )
       .subscribe();
   }
