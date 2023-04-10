@@ -1,0 +1,2 @@
+body{position:relative;overflow:hidden}canvas{z-index:-1;position:absolute;top:-300px;left:-300px}a{z-index:10;cursor:pointer;color:#666;text-shadow:0 1px #fff;background:#f9f9f9 linear-gradient(#f9f9f9 5%,#e9e9e9 100%);border:1px solid #dcdcdc;border-radius:6px;margin:10px;padding:6px 24px;font-family:Arial;font-size:15px;font-weight:700;text-decoration:none;display:inline-block;position:absolute;box-shadow:inset 0 1px #fff}a:hover{background:#e9e9e9 linear-gradient(#e9e9e9 5%,#f9f9f9 100%)}a:active{position:relative;top:1px}
+/*# sourceMappingURL=index.834c9802.css.map */

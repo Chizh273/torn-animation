@@ -558,21 +558,22 @@ function hmrAccept(bundle, id) {
 
 },{}],"h7u1C":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-var _canvas = require("./canvas");
 var _animationV2 = require("./animation.v2");
 var _animationV2Default = parcelHelpers.interopDefault(_animationV2);
+var _canvas = require("./canvas");
+var _settings = require("./settings");
 const WIDTH = window.innerWidth + 600;
 const HEIGHT = window.innerHeight + 600;
 const animation = new (0, _animationV2Default.default)(new (0, _canvas.CanvasFactory)(document), document, WIDTH, HEIGHT, {
     x: 600,
     y: 600
-});
+}, (0, _settings.settings));
 (function render() {
     animation.dispatch();
     requestAnimationFrame(render);
 })();
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./canvas":"cYd8k","./animation.v2":"f6Zua"}],"f6Zua":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./canvas":"cYd8k","./animation.v2":"f6Zua","./settings":"7L8rz"}],"f6Zua":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _rxjs = require("rxjs");
@@ -583,16 +584,13 @@ class AnimationV2 {
     get tick$() {
         return this._tick$.asObservable();
     }
-    constructor(canvasFactory, document, width, height, offset, lineLifeTicks = 100, speed = 7, backgroundColor = "black", lineColor = "white"){
+    constructor(canvasFactory, document, width, height, offset, settings){
         this.canvasFactory = canvasFactory;
         this.document = document;
         this.width = width;
         this.height = height;
         this.offset = offset;
-        this.lineLifeTicks = lineLifeTicks;
-        this.speed = speed;
-        this.backgroundColor = backgroundColor;
-        this.lineColor = lineColor;
+        this.settings = settings;
         this.realCanvas = this.canvasFactory.createCanvas(this.width, this.height);
         this.leftSideImg = this.document.createElement("img");
         this.rightSideImg = this.document.createElement("img");
@@ -606,9 +604,9 @@ class AnimationV2 {
         this._tick$.next(this._tick$.value + 1);
     }
     setup() {
-        this.realCanvas.fill(this.backgroundColor);
-        // Generate and save left and right figures every this.lineLifeTicksms.
-        this.tick$.pipe((0, _rxjs.filter)((time)=>time % this.lineLifeTicks === 0), (0, _rxjs.map)(()=>{
+        this.realCanvas.fill(this.settings.data.backgroundColor);
+        // Generate and save left and right figures every this.settings.data.lineLifeTicksms.
+        this.tick$.pipe((0, _rxjs.filter)((time)=>time % this.settings.data.lineLifeTicks === 0), (0, _rxjs.map)(()=>{
             this.currentLine = (0, _math.createLine)(this.sides, this.offset);
             const lineLength = (0, _math.calcLineLength)(this.currentLine.start, this.currentLine.end);
             const line = (0, _math.generateTornLine)(this.currentLine.start, this.currentLine.end, lineLength, parseInt(`${lineLength / 7}`, 10), Math.PI);
@@ -621,26 +619,27 @@ class AnimationV2 {
             this.rightSideImg.src = right;
         })).subscribe();
         // Draw and animate parts on real canvas.
-        this.tick$.pipe((0, _rxjs.filter)((time)=>time % this.lineLifeTicks !== 0), (0, _rxjs.map)((time)=>time % this.lineLifeTicks), (0, _rxjs.map)((timer)=>{
+        this.tick$.pipe((0, _rxjs.filter)((time)=>time % this.settings.data.lineLifeTicks !== 0), (0, _rxjs.map)((time)=>time % this.settings.data.lineLifeTicks), (0, _rxjs.map)((timer)=>{
             const endPointWithoutOffset = {
                 x: this.currentLine.end.x - this.currentLine.start.x,
                 y: this.currentLine.end.y - this.currentLine.start.y
             };
             const lineRadianAngle = (0, _math.calcLineAngle)(endPointWithoutOffset);
+            const halfPi = Math.PI / 2;
             return {
-                left: (0, _math.calcPointInPolarSystem)(lineRadianAngle - Math.PI / 2, timer / this.speed),
-                right: (0, _math.calcPointInPolarSystem)(lineRadianAngle + Math.PI / 2, timer / this.speed)
+                left: (0, _math.calcPointInPolarSystem)(lineRadianAngle - halfPi, timer / this.settings.data.distanceCoefficient),
+                right: (0, _math.calcPointInPolarSystem)(lineRadianAngle + halfPi, timer / this.settings.data.distanceCoefficient)
             };
         }), (0, _rxjs.switchMap)(({ left , right  })=>(0, _rxjs.forkJoin)([
                 this.realCanvas.clear(),
-                (0, _innerFrom.fromPromise)(Promise.resolve().then(()=>this.realCanvas.fill(this.backgroundColor))),
+                (0, _innerFrom.fromPromise)(Promise.resolve().then(()=>this.realCanvas.fill(this.settings.data.backgroundColor))),
                 this.realCanvas.drawImage(this.leftSideImg, left),
                 this.realCanvas.drawImage(this.rightSideImg, right)
             ]))).subscribe();
     }
     drawPathOnTempCanvas(path) {
         return (0, _rxjs.of)(this.canvasFactory.createCanvas(this.width, this.height)).pipe((0, _rxjs.switchMap)((canvas)=>(0, _rxjs.forkJoin)([
-                canvas.drawPath(path, this.lineColor, this.backgroundColor),
+                canvas.drawPath(path, this.settings.data.lineColor, this.settings.data.backgroundColor),
                 canvas.drawImage(this.realCanvas.canvas, {
                     x: 0,
                     y: 0

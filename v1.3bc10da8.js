@@ -560,6 +560,7 @@ function hmrAccept(bundle, id) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 var _animationV1 = require("./animation.v1");
 var _animationV1Default = parcelHelpers.interopDefault(_animationV1);
+var _settings = require("./settings");
 var _canvas = require("./canvas");
 const WIDTH = window.innerWidth + 600;
 const HEIGHT = window.innerHeight + 600;
@@ -569,13 +570,14 @@ document.body.append(canvas.canvas);
 const animation = new (0, _animationV1Default.default)(canvas, img, WIDTH, HEIGHT, {
     x: 600,
     y: 600
-});
+}, (0, _settings.settings));
+console.log((0, _settings.settings));
 (function render() {
     animation.dispatch();
     requestAnimationFrame(render);
 })();
 
-},{"./animation.v1":"iGAl6","./canvas":"cYd8k","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"iGAl6":[function(require,module,exports) {
+},{"./animation.v1":"iGAl6","./canvas":"cYd8k","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./settings":"7L8rz"}],"iGAl6":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _rxjs = require("rxjs");
@@ -584,16 +586,13 @@ class Animation {
     get tick$() {
         return this._tick$.asObservable();
     }
-    constructor(canvas, prevCanvasImg, width, height, offset, lineLifeTicks = 100, speed = 7, backgroundColor = "black", lineColor = "white"){
+    constructor(canvas, prevCanvasImg, width, height, offset, settings){
         this.canvas = canvas;
         this.prevCanvasImg = prevCanvasImg;
         this.width = width;
         this.height = height;
         this.offset = offset;
-        this.lineLifeTicks = lineLifeTicks;
-        this.speed = speed;
-        this.backgroundColor = backgroundColor;
-        this.lineColor = lineColor;
+        this.settings = settings;
         this._tick$ = new (0, _rxjs.BehaviorSubject)(0);
         this.sides = (0, _math.generateSides)(this.width, this.height);
         this.setup();
@@ -602,9 +601,9 @@ class Animation {
         this._tick$.next(this._tick$.value + 1);
     }
     setup() {
-        this.canvas.fill(this.backgroundColor);
+        this.canvas.fill(this.settings.data.backgroundColor);
         // Generate torn line every ${this.speed} ticks.
-        this.tick$.pipe((0, _rxjs.filter)((time)=>time % this.lineLifeTicks === 0), (0, _rxjs.switchMap)(()=>{
+        this.tick$.pipe((0, _rxjs.filter)((time)=>time % this.settings.data.lineLifeTicks === 0), (0, _rxjs.switchMap)(()=>{
             return this.canvas.toDataUrl();
         }), (0, _rxjs.tap)((canvasImg)=>{
             this.prevCanvasImg.src = canvasImg;
@@ -614,15 +613,16 @@ class Animation {
             this.tornLine = (0, _math.generateTornLine)(this.currentLine.start, this.currentLine.end, lineLength, parseInt(`${lineLength / 5}`, 10), Math.PI);
         });
         // Draw and animate torn line on the canvas.
-        this.tick$.pipe((0, _rxjs.filter)((time)=>time % this.lineLifeTicks !== 0), (0, _rxjs.map)((time)=>time % this.lineLifeTicks), (0, _rxjs.map)((timer)=>{
+        this.tick$.pipe((0, _rxjs.filter)((time)=>time % this.settings.data.lineLifeTicks !== 0), (0, _rxjs.map)((time)=>time % this.settings.data.lineLifeTicks), (0, _rxjs.map)((timer)=>{
             const endPointWithoutOffset = {
                 x: this.currentLine.end.x - this.currentLine.start.x,
                 y: this.currentLine.end.y - this.currentLine.start.y
             };
             const lineRadianAngle = (0, _math.calcLineAngle)(endPointWithoutOffset);
+            const halfPI = Math.PI / 2;
             return {
-                left: (0, _math.calcPointInPolarSystem)(lineRadianAngle + Math.PI / 2, timer / this.speed),
-                right: (0, _math.calcPointInPolarSystem)(lineRadianAngle - Math.PI / 2, timer / this.speed)
+                left: (0, _math.calcPointInPolarSystem)(lineRadianAngle + halfPI, timer / this.settings.data.distanceCoefficient),
+                right: (0, _math.calcPointInPolarSystem)(lineRadianAngle - halfPI, timer / this.settings.data.distanceCoefficient)
             };
         }), (0, _rxjs.map)(({ left , right  })=>({
                 left: this.tornLine.map((point)=>(0, _math.applyOffset)(point, left)),
@@ -632,7 +632,7 @@ class Animation {
                     x: 0,
                     y: 0
                 }),
-                this.canvas.drawFigure(figure, this.lineColor, this.backgroundColor)
+                this.canvas.drawFigure(figure, this.settings.data.lineColor, this.settings.data.backgroundColor)
             ]))).subscribe();
     }
 }
